@@ -1,34 +1,37 @@
 require_relative '03_associatable'
 
-# Phase IV
 module Associatable
-  # Remember to go back to 04_associatable to write ::assoc_options
 
   def has_one_through(name, through_name, source_name)
 
-      human = assoc_options[through_name]
-      # p through_options
-
-      human_class = human.model_class
-
       define_method(name) do
-        house = human_class.assoc_options[source_name]
+        through_options = self.class.assoc_options[through_name]
+        through_class = through_options.model_class
 
-        owner_id = human.foreign_key
-        human_id = human.primary_key
+        source_options = through_class.assoc_options[source_name]
 
-        # human_inst = Human.find(self.send(owner_id))
+        through_table = through_options.table_name
+        through_foreign_key = through_class.foreign_key
+        through_primary_key = through_class.primary_key
 
-        human_house_id = house.foreign_key
-        house_class = house.model_class
-        house_id = house.primary_key
+        source_table = source_options.table_name
+        source_foreign_key = source_options.foreign_key
+        source_primary_key = source_options.primary_key
 
-        #self is cat instance
+        source = DBConnection.execute(<<-SQL, self.send(through_foreign_key))
+          SELECT
+            #{source_table}.*
+          FROM
+            #{source_table}
+          JOIN
+            #{through_table}
+          ON
+            #{source_foreign_key} = #{source_table}.#{source_primary_key}
+          WHERE
+            #{through_table}.#{through_primary_key} = ?
+        SQL
 
-        self.send(through_name).send(source_name)
-
-        # house_class.where(house_id => human_house_id,
-        #                   human_id => self.send(owner_id))
+          source_options.model_class.parse_all(source).first
       end
 
   end
