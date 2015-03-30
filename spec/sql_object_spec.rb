@@ -1,4 +1,4 @@
-require '01_sql_object'
+require 'sql_object'
 require 'securerandom'
 
 describe SQLObject do
